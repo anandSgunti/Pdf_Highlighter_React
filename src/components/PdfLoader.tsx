@@ -1,11 +1,15 @@
 import React, { ReactNode, useEffect, useState, useCallback } from "react";
-import { getDocument, PDFDocumentProxy } from "pdfjs-dist";
+
+
+import {GlobalWorkerOptions, getDocument, PDFDocumentProxy } from "pdfjs-dist";
 import { pdfjs } from 'react-pdf';
 
+// Set the worker source for PDF.js
+GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 
 // Set the worker source for PDF.js
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
+// pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
 
 
 const DEFAULT_BEFORE_LOAD = (progress: { loaded: number; total: number }) => (
