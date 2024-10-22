@@ -1,0 +1,42 @@
+name: Deploy React App to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # Trigger deploy on push to the main branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      # Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Adjust the Node.js version if needed
+
+      # Navigate to the project folder
+      - name: Navigate to Pdf_Highlighter_React folder
+        run: cd Pdf_Highlighter_React
+
+      # Install project dependencies
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./Pdf_Highlighter_React  # Modify based on actual folder structure
+
+      # Build the project
+      - name: Build the project
+        run: npm run build
+        working-directory: ./Pdf_Highlighter_React
+
+      # Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./Pdf_Highlighter_React/build
