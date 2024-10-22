@@ -51,11 +51,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DanielArnould/react-pdf-highlighter.git"
+    "url": "git+https://github.com/anandSgunti/Pdf_Highlighter_React.git"
   },
   "bugs": {
-    "url": "https://github.com/DanielArnould/react-pdf-highlighter-extended/issues"
-  },
+    "url": "https://github.com/anandSgunti/Pdf_Highlighter_React/issues"
+  }, 
   "devDependencies": {
     "@types/lodash.debounce": "^4.0.9",
     "@types/node": "^20.14.9",
