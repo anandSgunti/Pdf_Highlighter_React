@@ -2,7 +2,7 @@ import React, { ReactNode, useEffect, useState, useCallback } from "react";
 
 
 import {GlobalWorkerOptions, getDocument, PDFDocumentProxy } from "pdfjs-dist";
-import { pdfjs } from 'react-pdf';
+//import { pdfjs } from 'react-pdf';
 
 // Set the worker source for PDF.js
 GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs`;
