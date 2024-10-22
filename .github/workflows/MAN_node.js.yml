@@ -33,7 +33,8 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}  # Make sure this token has the right permissions
-          publish_dir: ./example/dist
+          publish_dir: ./example/src
+
 
 permissions:
   contents: write  # Ensure this allows write access for the GITHUB_TOKEN
