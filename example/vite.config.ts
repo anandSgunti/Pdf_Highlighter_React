@@ -9,7 +9,9 @@ export default defineConfig({
   },
   plugins: [reactRefresh()],
   server: {
-    port: 3000,
+    host: '0.0.0.0', // Allow access from any IP
+    port: 3000,      // Set the port to 3000 or any other desired port
+    strictPort: true 
   },
   optimizeDeps: {
     esbuildOptions: {
