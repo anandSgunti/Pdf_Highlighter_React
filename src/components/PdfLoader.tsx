@@ -2,6 +2,8 @@ import React, { ReactNode, useEffect, useState, useCallback } from "react";
 import { getDocument, PDFDocumentProxy } from "pdfjs-dist";
 import { pdfjs } from 'react-pdf';
 
+
+
 // Set the worker source for PDF.js
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -23,7 +25,7 @@ interface PdfLoaderProps {
   onProgress?: (progressData: { loaded: number; total: number }) => void;
   children: (pdfDocument: PDFDocumentProxy) => ReactNode;
 }
-
+export { PdfLoaderProps };
 export const PdfLoader: React.FC<PdfLoaderProps> = ({
   document,
   beforeLoad = DEFAULT_BEFORE_LOAD,
