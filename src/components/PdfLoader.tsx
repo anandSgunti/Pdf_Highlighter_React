@@ -1,5 +1,5 @@
 import React, { ReactNode, useEffect, useState, useCallback } from "react";
-import { GlobalWorkerOptions, getDocument, PDFDocumentProxy } from "pdfjs-dist";
+import { getDocument, PDFDocumentProxy } from "pdfjs-dist";
 import { pdfjs } from 'react-pdf';
 
 
