@@ -16,6 +16,12 @@ export default defineConfig({
       target: "esnext",
     },
   },
+  resolve: {
+    alias: {
+      'pdfjs-dist/build/pdf.worker.entry': require.resolve('pdfjs-dist/build/pdf.worker.entry'),
+    },
+  },
+  
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
   },
