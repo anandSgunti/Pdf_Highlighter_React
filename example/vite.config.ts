@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import reactRefresh from "@vitejs/plugin-react";
+import { createRequire } from 'module';  // Needed to properly resolve require
 
+const require = createRequire(import.meta.url);
 export default defineConfig({
   base: "/Pdf_Highlighter_React/example-app/",
   build: {
