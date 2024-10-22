@@ -5,8 +5,6 @@ doc
 dist
 dist-ssr
 dist-example
-*.local
 types
-local
 public
 example-app
