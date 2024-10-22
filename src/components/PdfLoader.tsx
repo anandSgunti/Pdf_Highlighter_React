@@ -25,7 +25,7 @@ interface PdfLoaderProps {
   onProgress?: (progressData: { loaded: number; total: number }) => void;
   children: (pdfDocument: PDFDocumentProxy) => ReactNode;
 }
-export { PdfLoaderProps };
+export type { PdfLoaderProps };
 export const PdfLoader: React.FC<PdfLoaderProps> = ({
   document,
   beforeLoad = DEFAULT_BEFORE_LOAD,
