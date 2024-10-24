@@ -1,18 +1,11 @@
-import React, { ReactNode, useEffect, useState, useCallback } from "react";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
+import { GlobalWorkerOptions, OnProgressParameters, getDocument, type PDFDocumentLoadingTask, type PDFDocumentProxy } from "pdfjs-dist";
+import { DocumentInitParameters, TypedArray } from "pdfjs-dist/types/src/display/api";
 
 
-import {GlobalWorkerOptions, getDocument, PDFDocumentProxy } from "pdfjs-dist";
-//import { pdfjs } from 'react-pdf';
-
-// Set the worker source for PDF.js
 GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs`;
 
-
-// Set the worker source for PDF.js
-// pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
-
-
-const DEFAULT_BEFORE_LOAD = (progress: { loaded: number; total: number }) => (
+const DEFAULT_BEFORE_LOAD = (progress: OnProgressParameters) => (
   <div style={{ color: "black" }}>
     Loading {Math.floor((progress.loaded / progress.total) * 100)}%
   </div>
@@ -22,100 +15,167 @@ const DEFAULT_ERROR_MESSAGE = (error: Error) => (
   <div style={{ color: "black" }}>{error.message}</div>
 );
 
-interface PdfLoaderProps {
-  document?: string | Uint8Array; // Document can be a URL or binary data
-  beforeLoad?: (progress: { loaded: number; total: number }) => ReactNode;
-  onError?: (error: Error) => ReactNode;
-  onProgress?: (progressData: { loaded: number; total: number }) => void;
-  children: (pdfDocument: PDFDocumentProxy) => ReactNode;
+const DEFAULT_ON_ERROR = (error: Error) => {
+  throw new Error(`Error loading PDF document: ${error.message}!`);
+};
+
+const DEFAULT_WORKER_SRC =
+ "https://unpkg.com/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs";
+
+/**
+ * The props type for {@link PdfLoader}.
+ *
+ * @category Component Properties
+ */
+export interface PdfLoaderProps {
+  /**
+   * The document to be loaded by PDF.js.
+   * If you need to pass HTTP headers, auth parameters,
+   * or other pdf settings, do it through here.
+   */
+  document: Uint8Array | DocumentInitParameters;
+
+  /**
+   * Callback to render content before the PDF document is loaded.
+   *
+   * @param progress - PDF.js progress status.
+   * @returns - Component to be rendered in space of the PDF document while loading.
+   */
+  beforeLoad?(progress: OnProgressParameters): ReactNode;
+
+  /**
+   * Component to render in the case of any PDF loading errors.
+   *
+   * @param error - PDF loading error.
+   * @returns - Component to be rendered in space of the PDF document.
+   */
+  errorMessage?(error: Error): ReactNode;
+
+  /**
+   * Child components to use/render the loaded PDF document.
+   *
+   * @param pdfDocument - The loaded PDF document.
+   * @returns - Component to render once PDF document is loaded.
+   */
+  children(pdfDocument: PDFDocumentProxy): ReactNode;
+
+  /**
+   * Callback triggered whenever an error occurs.
+   *
+   * @param error - PDF Loading error triggering the event.
+   * @returns - Component to be rendered in space of the PDF document.
+   */
+  onError?(error: Error): void;
+
+  /**
+   * NOTE: This will be applied to all PdfLoader instances.
+   * If you want to only apply a source to this instance, use the document parameters.
+   */
+  workerSrc?: string;
 }
-export type { PdfLoaderProps };
-export const PdfLoader: React.FC<PdfLoaderProps> = ({
+
+/**
+ * A component for loading a PDF document and passing it to a child.
+ *
+ * @category Component
+ */
+export const PdfLoader = ({
   document,
   beforeLoad = DEFAULT_BEFORE_LOAD,
-  onError = DEFAULT_ERROR_MESSAGE,
-  onProgress,
+  errorMessage = DEFAULT_ERROR_MESSAGE,
   children,
-}) => {
-  const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
-  const [loadingError, setLoadingError] = useState<Error | null>(null);
-  const [file, setFile] = useState<Uint8Array | null>(null);
-  const [doiUrl, setDoiUrl] = useState<string>("");
+  onError = DEFAULT_ON_ERROR,
+  workerSrc = DEFAULT_WORKER_SRC,
+}: PdfLoaderProps) => {
+  const pdfLoadingTaskRef = useRef<PDFDocumentLoadingTask | null>(null);
+  const pdfDocumentRef = useRef<PDFDocumentProxy | null>(null);
 
-  // Function to load the document
-  const loadDocument = useCallback(async () => {
-    if (!document && !file && !doiUrl) return; // Prevents loading when no file or DOI
+  const [error, setError] = useState<Error | null>(null);
+  const [loadingProgress, setLoadingProgress] =
+    useState<OnProgressParameters | null>(null);
 
-    setLoadingError(null);
+  // Initialize document
+  useEffect(() => {
+    GlobalWorkerOptions.workerSrc = workerSrc;
+    pdfLoadingTaskRef.current = getDocument(document);
+    pdfLoadingTaskRef.current.onProgress = (progress: OnProgressParameters) => {
+      setLoadingProgress(progress.loaded > progress.total ? null : progress);
+    };
 
-    try {
-      const pdfSource = file ? { data: file } : doiUrl || document; // Use the appropriate source
-      const loadingTask = getDocument(pdfSource);
+    pdfLoadingTaskRef.current.promise
+      .then((pdfDocument: PDFDocumentProxy) => {
+        pdfDocumentRef.current = pdfDocument;
+      })
+      .catch((error: Error) => {
+        if (error.message !== "Worker was destroyed") {
+          setError(error);
+          onError(error);
+        }
+      })
+      .finally(() => {
+        setLoadingProgress(null);
+      });
 
-      if (onProgress) {
-        loadingTask.onProgress = onProgress;
+    return () => {
+      if (pdfLoadingTaskRef.current) {
+        pdfLoadingTaskRef.current.destroy();
       }
 
-      const loadedPdf = await loadingTask.promise; // Await the PDF loading
-      setPdfDocument(loadedPdf); // Set the loaded PDF document
-    } catch (error) {
-      setLoadingError(error as Error); // Set the error state
-      onError(error as Error); // Invoke the error handler
-    }
-  }, [document, file, doiUrl, onProgress, onError]);
+      if (pdfDocumentRef.current) {
+        pdfDocumentRef.current.destroy();
+      }
+    };
+  }, [document]);
 
-  // Effect to reload the document when any input changes
-  useEffect(() => {
-    loadDocument(); // Call the loadDocument function
-  }, [document, file, doiUrl, loadDocument]);
+  return error
+    ? errorMessage(error)
+    : loadingProgress
+      ? beforeLoad(loadingProgress)
+      : pdfDocumentRef.current && children(pdfDocumentRef.current);
+};
 
-  // File upload handler
+/**
+ * A wrapper component to handle file upload from the local machine.
+ */
+export const PdfLoaderWithFileUpload = ({
+  beforeLoad,
+  errorMessage,
+  children,
+  onError,
+  workerSrc,
+}: Omit<PdfLoaderProps, 'document'>) => {
+  const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const uploadedFile = event.target.files?.[0];
-    if (uploadedFile) {
+    const file = event.target.files?.[0];
+    if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const result = e.target?.result;
-        if (result instanceof ArrayBuffer) {
-          setFile(new Uint8Array(result)); // Convert ArrayBuffer to Uint8Array
-          setDoiUrl(""); // Reset DOI input when a file is uploaded
+        const arrayBuffer = e.target?.result;
+        if (arrayBuffer) {
+          setPdfData(new Uint8Array(arrayBuffer as ArrayBuffer));
         }
       };
-      reader.readAsArrayBuffer(uploadedFile); // Read the file as ArrayBuffer
+      reader.readAsArrayBuffer(file);
     }
-  };
-
-  // DOI/URL input change handler
-  const handleDoiChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value.trim();
-    setDoiUrl(value); // Set the DOI/URL state
-    setFile(null); // Reset file if DOI is entered
   };
 
   return (
     <div>
-      {/* PDF File Upload */}
       <input type="file" accept="application/pdf" onChange={handleFileUpload} />
-      
-      {/* DOI or URL Input */}
-      <input
-        type="text"
-        placeholder="Enter DOI or PDF URL"
-        value={doiUrl}
-        onChange={handleDoiChange}
-        style={{ marginLeft: "10px" }}
-      />
-
-      {/* Loader and Error Display */}
-      <div style={{ marginTop: "20px" }}>
-        {loadingError ? (
-          onError(loadingError) // Display error message
-        ) : pdfDocument ? (
-          children(pdfDocument) // Render children with loaded PDF
-        ) : (
-          beforeLoad({ loaded: 0, total: 100 }) // Show loading message
-        )}
-      </div>
+      {pdfData ? (
+        <PdfLoader
+          document={pdfData}
+          beforeLoad={beforeLoad}
+          errorMessage={errorMessage}
+          onError={onError}
+          workerSrc={workerSrc}
+        >
+          {children}
+        </PdfLoader>
+      ) : (
+        <div>Select a PDF to upload</div>
+      )}
     </div>
   );
 };

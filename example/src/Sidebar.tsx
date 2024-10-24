@@ -25,7 +25,7 @@ const Sidebar = ({
       {/* Description section */}
       <div className="description" style={{ padding: "1rem" }}>
         <h2 style={{ marginBottom: "1rem" }}>
-          Project-0  v1.0
+        Reference Notation Tool 
         </h2>
 
         {/* <p style={{ fontSize: "0.7rem" }}>
@@ -88,7 +88,7 @@ const Sidebar = ({
 
       <div style={{ padding: "0.5rem" }}>
         <button onClick={toggleDocument} className="sidebar__toggle">
-          Toggle PDF document
+          Save Highlights
         </button>
       </div>
 

@@ -5,6 +5,8 @@ import ExpandableTip from "./ExpandableTip";
 import HighlightContainer from "./HighlightContainer";
 import Sidebar from "./Sidebar";
 import Toolbar from "./Toolbar";
+import SidebarComponent from "./chatbot";
+
 import {
   GhostHighlight,
   Highlight,
@@ -19,11 +21,10 @@ import { testHighlights as _testHighlights } from "./test-highlights";
 import { CommentedHighlight } from "./types";
 
 const TEST_HIGHLIGHTS = _testHighlights;
-const PRIMARY_PDF_URL = "https://arxiv.org/pdf/2203.11115";
-const SECONDARY_PDF_URL = "https://arxiv.org/pdf/1604.02480";
+const PRIMARY_PDF_URL = "1 García-Carmona.pdf"; // This can be removed since we are focusing on file uploads only.
 
 const getNextId = () => String(Math.random()).slice(2);
-
+const toggleDocument = () => {}
 const parseIdFromHash = () => {
   return document.location.hash.slice("#highlight-".length);
 };
@@ -33,25 +34,14 @@ const resetHash = () => {
 };
 
 const App = () => {
-  const [url, setUrl] = useState<string | Uint8Array>(PRIMARY_PDF_URL); // Accept a URL or Uint8Array for uploaded files
-  const [highlights, setHighlights] = useState<Array<CommentedHighlight>>(
-    TEST_HIGHLIGHTS[PRIMARY_PDF_URL] ?? []
-  );
-  const currentPdfIndexRef = useRef(0);
+  const [highlights, setHighlights] = useState<Array<CommentedHighlight>>([]);
   const [contextMenu, setContextMenu] = useState<ContextMenuProps | null>(null);
   const [pdfScaleValue, setPdfScaleValue] = useState<number | undefined>(undefined);
   const [highlightPen, setHighlightPen] = useState<boolean>(false);
-  const [pdfInputMode, setPdfInputMode] = useState<'upload' | 'url'>('url'); // To toggle between DOI link and upload
+  const [file, setFile] = useState<Uint8Array | null>(null); // Stores uploaded file in Uint8Array format.
 
   // Refs for PdfHighlighter utilities
   const highlighterUtilsRef = useRef<PdfHighlighterUtils>();
-
-  const toggleDocument = () => {
-    const urls = [PRIMARY_PDF_URL, SECONDARY_PDF_URL];
-    currentPdfIndexRef.current = (currentPdfIndexRef.current + 1) % urls.length;
-    setUrl(urls[currentPdfIndexRef.current]);
-    setHighlights(TEST_HIGHLIGHTS[urls[currentPdfIndexRef.current]] ?? []);
-  };
 
   // Click listeners for context menu
   useEffect(() => {
@@ -134,7 +124,6 @@ const App = () => {
     highlighterUtilsRef.current.toggleEditInProgress(true);
   };
 
-  // Scroll to highlight based on hash in the URL
   const scrollToHighlightFromHash = () => {
     const highlight = getHighlightById(parseIdFromHash());
 
@@ -152,27 +141,60 @@ const App = () => {
     };
   }, [scrollToHighlightFromHash]);
 
-  // Handle PDF upload
+  const styles = {
+    uploadButton: {
+      display: 'inline-block',
+      padding: '12px 25px', // Slightly increased padding for better spacing
+      backgroundImage: 'linear-gradient(45deg, #0D74B9, #0CA789)', // MEDNET blue and green gradient
+      color: '#fff', // White text
+      borderRadius: '6px', // Rounded corners
+      cursor: 'pointer',
+      fontSize: '12px', // Increased font size for better readability
+      fontWeight: '600', // Slightly thicker font weight
+      letterSpacing: '0.5px', // Adds spacing between letters
+      border: 'none',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Subtle shadow for depth
+      transition: 'background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease', // Smooth transition
+  
+      // Hover effect
+      '&:hover': {
+        backgroundImage: 'linear-gradient(45deg, #0CA789, #0D74B9)', // Reverse gradient on hover
+        boxShadow: '0 6px 8px rgba(0, 0, 0, 0.15)', // Slightly larger shadow on hover
+        transform: 'translateY(-2px)', // Lift the button slightly on hover
+      },
+  
+      // Active effect
+      '&:active': {
+        backgroundColor: '#0A8D6E', // Darker green when pressed
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // Reduce shadow when clicked
+        transform: 'translateY(1px)', // Press effect by moving it down
+      },
+    },
+    fileName: {
+      fontSize: '16px',
+      color: '#333',
+      marginLeft: '15px', // Space between button and file name
+      fontStyle: 'italic', // Italicize the file name for differentiation
+    },
+
+  
+  
+  }
+
+  // Handle PDF upload from local machine
   const handlePdfUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
+    const uploadedFile = event.target.files?.[0];
+    if (uploadedFile) {
       const reader = new FileReader();
-      reader.onload = () => {
-        if (reader.result instanceof ArrayBuffer) {
-          const typedArray = new Uint8Array(reader.result); // Convert ArrayBuffer to Uint8Array
-          setUrl(typedArray); // Set URL as Uint8Array for PdfLoader
-          setHighlights([]); // Reset highlights for uploaded PDF
+      reader.onload = (e) => {
+        const result = e.target?.result;
+        if (result instanceof ArrayBuffer) {
+          setFile(new Uint8Array(result)); // Convert ArrayBuffer to Uint8Array and set it as the PDF file.
+          setHighlights([]); // Reset highlights for the new PDF
         }
       };
-      reader.readAsArrayBuffer(file); // Read as ArrayBuffer
+      reader.readAsArrayBuffer(uploadedFile); // Read the file as ArrayBuffer
     }
-  };
-
-  // Handle DOI URL input
-  const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const doi = event.target.value.trim();
-    setUrl(`https://doi.org/${doi}`); // Set the URL for the DOI link
-    setHighlights([]); // Reset highlights for new URL
   };
 
   return (
@@ -181,6 +203,7 @@ const App = () => {
         highlights={highlights}
         resetHighlights={resetHighlights}
         toggleDocument={toggleDocument}
+        
       />
       <div
         style={{
@@ -195,42 +218,24 @@ const App = () => {
           setPdfScaleValue={(value) => setPdfScaleValue(value)}
           toggleHighlightPen={() => setHighlightPen(!highlightPen)}
         />
-        <div style={{ padding: "10px", display: "flex", gap: "10px" }}>
-          <label>
-            <input
-              type="radio"
-              checked={pdfInputMode === 'url'}
-              onChange={() => setPdfInputMode('url')}
-            />
-            Enter DOI Link:
-            {pdfInputMode === 'url' && (
-              <input
-                type="text"
-                placeholder="Enter DOI link"
-                onBlur={handleUrlChange}
-                style={{ marginLeft: "10px" }}
-              />
-            )}
+        <div style={{ padding: '20px', display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <input
+            type="file"
+            accept="application/pdf"
+            id="pdf-upload"
+            onChange={handlePdfUpload}
+            style={{ display: 'none' }} // Hide the default file input
+          />
+          <label htmlFor="pdf-upload" style={styles.uploadButton}>
+            Choose PDF
           </label>
-          <label>
-            <input
-              type="radio"
-              checked={pdfInputMode === 'upload'}
-              onChange={() => setPdfInputMode('upload')}
-            />
-            Upload PDF:
-            {pdfInputMode === 'upload' && (
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={handlePdfUpload}
-                style={{ marginLeft: "10px" }}
-              />
-            )}
+          <label htmlFor="pdf-upload" style={styles.uploadButton}>
+            Download
           </label>
+            
         </div>
-        {url && (
-          <PdfLoader document={url}>
+        {file && (
+          <PdfLoader document={file}>
             {(pdfDocument) => (
               <PdfHighlighter
                 enableAreaSelection={(event) => event.altKey}
@@ -257,10 +262,17 @@ const App = () => {
           </PdfLoader>
         )}
       </div>
+      <div>
+        <SidebarComponent />
+      </div>
 
       {contextMenu && <ContextMenu {...contextMenu} />}
     </div>
+
+    
   );
+
+  
 };
 
 export default App;
