@@ -1,6 +1,6 @@
 import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { GlobalWorkerOptions, OnProgressParameters, getDocument, type PDFDocumentLoadingTask, type PDFDocumentProxy } from "pdfjs-dist";
-import { DocumentInitParameters, TypedArray } from "pdfjs-dist/types/src/display/api";
+import { DocumentInitParameters } from "pdfjs-dist/types/src/display/api";
 
 
 GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs`;
