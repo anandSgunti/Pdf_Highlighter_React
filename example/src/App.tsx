@@ -20,8 +20,8 @@ import "./style/App.css";
 import { testHighlights as _testHighlights } from "./test-highlights";
 import { CommentedHighlight } from "./types";
 
-const TEST_HIGHLIGHTS = _testHighlights;
-const PRIMARY_PDF_URL = "1 García-Carmona.pdf"; // This can be removed since we are focusing on file uploads only.
+//const TEST_HIGHLIGHTS = _testHighlights;
+//const PRIMARY_PDF_URL = "1 García-Carmona.pdf"; // This can be removed since we are focusing on file uploads only.
 
 const getNextId = () => String(Math.random()).slice(2);
 const toggleDocument = () => {}
