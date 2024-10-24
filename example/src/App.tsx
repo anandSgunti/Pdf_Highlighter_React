@@ -181,6 +181,12 @@ const App = () => {
   
   }
 
+  const handleSearch = () => {
+
+      console.log("No text or search term to search.");
+      return;
+    }
+
   // Handle PDF upload from local machine
   const handlePdfUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0];
@@ -218,7 +224,8 @@ const App = () => {
           setPdfScaleValue={(value) => setPdfScaleValue(value)}
           toggleHighlightPen={() => setHighlightPen(!highlightPen)}
         />
-        <div style={{ padding: '20px', display: 'flex', gap: '15px', alignItems: 'center' }}>
+      
+        <div style={{ padding: '20px', display: 'flex', gap: '15px', alignItems: 'center',justifyContent: 'right' }}>
           <input
             type="file"
             accept="application/pdf"
@@ -232,8 +239,21 @@ const App = () => {
           <label htmlFor="pdf-upload" style={styles.uploadButton}>
             Download
           </label>
-            
+
+          
+        <input
+          type="text"
+          placeholder="Search PDF"
+          style={{ padding: '5px', width: '200px' }}
+        />
+        <button onClick={handleSearch} style={styles.uploadButton}>
+          Search
+        </button>
+      
+  
         </div>
+
+        
         {file && (
           <PdfLoader document={file}>
             {(pdfDocument) => (
